@@ -18,6 +18,14 @@ def get_url(url):
 
 class Submission:
   parser = HTMLParser.HTMLParser()
+  #langs is a dict with each language mapping to a pair with file format and comment format
+  # langs = {
+  #   'GNU C++':('.cpp','//'),
+  #   'MS C++':('.cpp','//'),
+  #   'Java 7':('.java','//')
+  # }
+  #TODO:fix this TOF with threading
+  active = 0
   def __init__(self, rowdom):
     """
     Given the Row DOM Extracting all the information about the submission
@@ -44,12 +52,14 @@ class Submission:
       return
     else:
       source_url = 'http://codeforces.com/contest/%d/submission/%d' % (self.contest_id, self.id)
+    Submission.active+=1
     html = get_url(source_url)
     start_tag = '<pre class="prettyprint" style="padding:0.5em;">'
     end_tag = '</pre>'
     p1=html.find(start_tag)+len(start_tag)
     p2=html.find(end_tag,p1)
     self.source_code = Submission.parser.unescape(html[p1:p2])
+    Submission.active-=1
     return self.source_code
 
   def get_source_with_stats(self):
@@ -78,28 +88,32 @@ def get_submissions_url(handle, page):
   return 'http://codeforces.com/submissions/%s/page/%d' % (handle, page)
 
 
-def have_next(html):
-  return html.find(r'<span class="inactive">&rarr;</span>')==-1
+def get_lastpage_num(html):
+  return max([int(num) for num in re.findall(r'/submissions/.*/page/(\d+)',html) ])
 
+def get_submissionpage(url,num,subpages):
+  print 'Downloading Submission Page #%d' % num
+  subpages.append((num,get_url(url)))
 
 def get_submissions(handle):
   pagenum = 1
   submissions = []
   url = get_submissions_url(handle, pagenum)
-  while url:
-    print 'Getting the submissions from page #%d' % pagenum
-    html = get_url(url)
+  lastpage = get_lastpage_num(get_url(url))
+  subpages = []
+  for i in range(1,lastpage+1):
+    thread.start_new_thread(get_submissionpage,(get_submissions_url(handle,i),i,subpages,))
+  while len(subpages)!=lastpage:
+    time.sleep(0.1)
+  for page in sorted(subpages):
+    print 'Parsing the submissions from page #%d' % page[0]
+    html = page[1]
     table = get_submission_table(html)
     table = table.replace('&rsquo;',"'")
     table = minidom.parseString(table)
     table_rows = table.getElementsByTagName('tr')[1:]  #first row is just the headers and useless
     for row in table_rows:
       submissions.append(Submission(row))
-    if have_next(html):
-      pagenum += 1
-      url = get_submissions_url(handle, pagenum)
-    else:
-      break
   return submissions
 
 def store_submission(submission,dir=''):
@@ -142,11 +156,11 @@ def main():
   subs = get_submissions(handle)
   ok_subs = [sub for sub in subs if sub.verdict=='OK' and not sub.isgym]
   for sub in ok_subs:
-    while thread._count()>15:
+    while Submission.active>30:
       time.sleep(0.1)
     print "Downloading Submission #%d for question : %s " % (sub.id, sub.name)
     thread.start_new_thread(sub.get_source,())
-  while thread._count()>1:
+  while Submission.active:
       time.sleep(0.1)
   for sub in ok_subs:
     print "Saving Submission #%d for question : %s " % (sub.id, sub.name)
