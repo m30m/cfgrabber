@@ -5,6 +5,8 @@ import re
 import HTMLParser
 import os
 import codecs
+import thread
+import time
 from xml.dom import minidom
 
 __author__ = 'amin'
@@ -88,6 +90,7 @@ def get_submissions(handle):
     print 'Getting the submissions from page #%d' % pagenum
     html = get_url(url)
     table = get_submission_table(html)
+    table = table.replace('&rsquo;',"'")
     table = minidom.parseString(table)
     table_rows = table.getElementsByTagName('tr')[1:]  #first row is just the headers and useless
     for row in table_rows:
@@ -137,10 +140,17 @@ def main():
   if len(sys.argv)>2:
     path=sys.argv[2]
   subs = get_submissions(handle)
-  for sub in subs:
-    if sub.verdict=='OK' and not sub.isgym:
-      print "Storing Submission #%d for question : %s " % (sub.id, sub.name)
-      store_submission(sub,dir=path)
+  ok_subs = [sub for sub in subs if sub.verdict=='OK' and not sub.isgym]
+  for sub in ok_subs:
+    while thread._count()>15:
+      time.sleep(0.1)
+    print "Downloading Submission #%d for question : %s " % (sub.id, sub.name)
+    thread.start_new_thread(sub.get_source,())
+  while thread._count()>1:
+      time.sleep(0.1)
+  for sub in ok_subs:
+    print "Saving Submission #%d for question : %s " % (sub.id, sub.name)
+    store_submission(sub,dir=path)
   return
 
 
