@@ -1,14 +1,17 @@
+#!/usr/bin/python -tt
 import sys
 import urllib
 import re
 import HTMLParser
+import os
+import codecs
 from xml.dom import minidom
 
 __author__ = 'amin'
 
 
 def get_url(url):
-  return urllib.urlopen(url).read()
+  return urllib.urlopen(url).read().decode('utf-8')
 
 
 class Submission:
@@ -28,12 +31,15 @@ class Submission:
     self.isgym = self.problem_link.find('gym') != -1
     (self.contest_id, self.problem_id) = re.search(r'/problemset/\w+/(\d+)/(\w+)', self.problem_link).groups()
     self.contest_id = int(self.contest_id)
-    self.name = name.childNodes[0].toxml()
+    self.name = re.search(r'\S.*',name.childNodes[0].wholeText).group()
     return
 
   def get_source(self):
+    if hasattr(self,'source_code'):
+      return self.source_code
     if self.isgym:
-      source_url = 'http://codeforces.com/gym/%d/submission/%d' % (self.contest_id, self.id)
+      print "Can't get Gym submissions"
+      return
     else:
       source_url = 'http://codeforces.com/contest/%d/submission/%d' % (self.contest_id, self.id)
     html = get_url(source_url)
@@ -41,7 +47,20 @@ class Submission:
     end_tag = '</pre>'
     p1=html.find(start_tag)+len(start_tag)
     p2=html.find(end_tag,p1)
-    return Submission.parser.unescape(html[p1:p2])
+    self.source_code = Submission.parser.unescape(html[p1:p2])
+    return self.source_code
+
+  def get_source_with_stats(self):
+    if self.lang.find('C++')!=-1 or self.lang.find('Java')!=-1:
+      comment_str=u'//'
+    else:
+      comment_str=u'#'
+    header = comment_str + u'Problem Name : %s\n' % self.name
+    header += comment_str + u'Execution Time : %s\n' % self.time
+    header += comment_str + u'Memory : %s\n' % self.memory
+    return header+self.get_source()
+
+
 
 
 def get_submission_table(html):
@@ -80,15 +99,48 @@ def get_submissions(handle):
       break
   return submissions
 
+def store_submission(submission,dir=''):
+  dir=os.path.join(dir,'contests/%d/' % submission.contest_id)
+  if not os.path.exists(dir):
+    os.makedirs(dir)
+  dir+=submission.problem_id
+  if submission.lang.find('C++')!=-1:
+    format='.cpp'
+  elif submission.lang.find('Java')!=-1:
+    format='.java'
+  else:
+    format='.py'
+  if os.path.exists(dir+format):
+    num=2
+    dir+='_'
+    while os.path.exists(dir+str(num)+format):
+      num+=1
+    dir+=str(num)
+
+  data=submission.get_source_with_stats()
+  try:
+    data.encode('ascii')
+    fh = open(dir+format,'w')
+  except UnicodeEncodeError:
+    fh = codecs.open(dir+format,'w','utf-8')
+  fh.write(data)
+  fh.close()
+
+
 
 def main():
-  handle = sys.argv[1:]
-  if not handle:
-    print 'Usage : username'
+  if len(sys.argv)<2:
+    print 'Usage : username [directory]'
     sys.exit(1)
+  handle = sys.argv[1]
+  path =''
+  if len(sys.argv)>2:
+    path=sys.argv[2]
   subs = get_submissions(handle)
   for sub in subs:
-    print "Submission #%d for question : %s " % (sub.id, sub.name)
+    if sub.verdict=='OK' and not sub.isgym:
+      print "Storing Submission #%d for question : %s " % (sub.id, sub.name)
+      store_submission(sub,dir=path)
   return
 
 
