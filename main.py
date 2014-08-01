@@ -20,11 +20,10 @@ class Submission:
     self.id = int(rowdom.attributes['data-submission-id'].value)
     cells = rowdom.getElementsByTagName('td')
     name = cells[3].getElementsByTagName('a')[0]
-    #TODO:parse these cells doms so it will be something useful
-    self.lang = cells[4]
-    self.verdict = cells[5]
-    self.time = cells[6]
-    self.memory = cells[7]
+    self.lang = re.search(r'\S.*',cells[4].childNodes[0].wholeText).group()
+    self.verdict = re.search(r'submissionVerdict="(\w+)"',cells[5].toxml()).group(1)
+    self.time = re.search(r'\d+ ms',cells[6].toxml()).group()
+    self.memory= re.search(r'\d+ KB',cells[7].toxml()).group()
     self.problem_link = name.attributes['href'].value
     self.isgym = self.problem_link.find('gym') != -1
     (self.contest_id, self.problem_id) = re.search(r'/problemset/\w+/(\d+)/(\w+)', self.problem_link).groups()
