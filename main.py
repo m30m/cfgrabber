@@ -20,7 +20,7 @@ class Submission:
   parser = HTMLParser.HTMLParser()
   #langs is a dict with each language mapping to a pair with file format and comment format
   langs = {
-    r'C++': ('.cpp', u'//'),
+    r'C\+\+': ('.cpp', u'//'),
     r'Java': ('.java', u'//'),
     r'Python': ('.py', u'#'),
     r'': ('.unknown', u'//')
