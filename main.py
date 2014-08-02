@@ -8,15 +8,29 @@ import codecs
 import thread
 import time
 from BeautifulSoup import BeautifulSoup
+import mechanize
 
-__author__ = 'amin'
+__author__ = 'Mohammad Amin Khashkhashi Moghaddam'
 
-
-def get_url(url):
-  return urllib.urlopen(url).read().decode('utf-8')
+class CFBrowser:
+  def __init__(self):
+    self.br = mechanize.Browser()
+    self.br.set_handle_refresh(False)
+    self.br.addheaders = [('User-agent', 'Firefox')]
+  def login(self,handle,password):
+    self.br.open('http://codeforces.com/enter')
+    self.br.form = list(self.br.forms())[1]
+    self.br['handle']=handle
+    self.br['password']=password
+    self.br.submit()
+  def get_url(self,url):
+    return self.br.open(url).read().decode('utf-8')
 
 
 class Submission:
+  """
+  Stores all the data about a submission
+  """
   parser = HTMLParser.HTMLParser()
   #langs is a dict with each language mapping to a pair with file format and comment format
   langs = {
@@ -153,6 +167,7 @@ def store_submission(submission, dir=''):
     fh = codecs.open(dir + format, 'w', 'utf-8')
   fh.write(data)
   fh.close()
+
 
 
 def main():
