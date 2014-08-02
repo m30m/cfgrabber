@@ -84,6 +84,16 @@ def get_submissionpage(url,num,subpages):
   print 'Downloading Submission Page #%d' % num
   subpages.append((num,get_url(url)))
 
+def get_submission_table(html):
+  """
+  Extracts the submission table from the complete html page so BeautifulSoup would only parse the table to improve speed
+  """
+  start_tag = '<table class="status-frame-datatable">'
+  end_tag = '</table>'
+  p1=html.find(start_tag)
+  p2=html.find(end_tag,p1)+len(end_tag)
+  return html[p1:p2]
+
 def get_submissions(handle):
   pagenum = 1
   submissions = []
@@ -97,8 +107,9 @@ def get_submissions(handle):
   for page in sorted(subpages):
     print 'Parsing the submissions from page #%d' % page[0]
     html = page[1]
-    soup = BeautifulSoup(html)
-    table = soup.findAll(attrs={'class':'status-frame-datatable'})[0]
+    #soup = BeautifulSoup(html)
+    #table = soup.findAll(attrs={'class':'status-frame-datatable'})[0]
+    table = BeautifulSoup(get_submission_table(html))
     table_rows = table.findAll('tr')[1:]  #first row is just the headers and useless
     for row in table_rows:
       submissions.append(Submission(row))
@@ -144,7 +155,7 @@ def main():
   subs = get_submissions(handle)
   ok_subs = [sub for sub in subs if sub.verdict=='OK' and not sub.isgym]
   for sub in ok_subs:
-    while Submission.active>30:
+    while Submission.active>80:
       time.sleep(0.1)
     print "Downloading Submission #%d for question : %s " % (sub.id, sub.name)
     thread.start_new_thread(sub.get_source,())
