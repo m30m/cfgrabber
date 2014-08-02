@@ -7,7 +7,7 @@ import os
 import codecs
 import thread
 import time
-from xml.dom import minidom
+from BeautifulSoup import BeautifulSoup
 
 __author__ = 'amin'
 
@@ -30,18 +30,17 @@ class Submission:
     """
     Given the Row DOM Extracting all the information about the submission
     """
-    self.id = int(rowdom.attributes['data-submission-id'].value)
-    cells = rowdom.getElementsByTagName('td')
-    name = cells[3].getElementsByTagName('a')[0]
-    self.lang = re.search(r'\S.*',cells[4].childNodes[0].wholeText).group()
-    self.verdict = re.search(r'submissionVerdict="(\w+)"',cells[5].toxml()).group(1)
-    self.time = re.search(r'\d+ ms',cells[6].toxml()).group()
-    self.memory= re.search(r'\d+ KB',cells[7].toxml()).group()
-    self.problem_link = name.attributes['href'].value
+    self.id = int(rowdom['data-submission-id'])
+    cells = rowdom.findAll('td')
+    self.lang = cells[4].getText()
+    self.verdict = cells[5].span['submissionverdict']
+    self.time = cells[6].getText()
+    self.memory= cells[7].getText()
+    self.problem_link = cells[3].a['href']
     self.isgym = self.problem_link.find('gym') != -1
     (self.contest_id, self.problem_id) = re.search(r'/problemset/\w+/(\d+)/(\w+)', self.problem_link).groups()
     self.contest_id = int(self.contest_id)
-    self.name = re.search(r'\S.*',name.childNodes[0].wholeText).group()
+    self.name = Submission.parser.unescape(cells[3].getText())
     return
 
   def get_source(self):
@@ -58,6 +57,7 @@ class Submission:
     end_tag = '</pre>'
     p1=html.find(start_tag)+len(start_tag)
     p2=html.find(end_tag,p1)
+    # self.source_code = Submission.parser.unescape(BeautifulSoup(html).findAll(attrs={'class':'prettyprint'})[0].getText())
     self.source_code = Submission.parser.unescape(html[p1:p2])
     Submission.active-=1
     return self.source_code
@@ -71,17 +71,6 @@ class Submission:
     header += comment_str + u'Execution Time : %s\n' % self.time
     header += comment_str + u'Memory : %s\n' % self.memory
     return header+self.get_source()
-
-
-
-
-def get_submission_table(html):
-  """
-  Extracts the submission table from the complete html page because the whole page XML is not well-formed
-  """
-  #Warning the RegExp must be fixed. we are using the fact that the submission table is the last table in the html document
-  #TODO: just remove the RegExp and do it with simple finding and stuff
-  return re.search(r'<table class="status-frame-datatable">[\s\S]*</table>', html).group()
 
 
 def get_submissions_url(handle, page):
@@ -108,10 +97,9 @@ def get_submissions(handle):
   for page in sorted(subpages):
     print 'Parsing the submissions from page #%d' % page[0]
     html = page[1]
-    table = get_submission_table(html)
-    table = table.replace('&rsquo;',"'")
-    table = minidom.parseString(table)
-    table_rows = table.getElementsByTagName('tr')[1:]  #first row is just the headers and useless
+    soup = BeautifulSoup(html)
+    table = soup.findAll(attrs={'class':'status-frame-datatable'})[0]
+    table_rows = table.findAll('tr')[1:]  #first row is just the headers and useless
     for row in table_rows:
       submissions.append(Submission(row))
   return submissions
