@@ -8,6 +8,7 @@ import codecs
 import thread
 import time
 from BeautifulSoup import BeautifulSoup
+from optparse import OptionParser
 
 __author__ = 'amin'
 
@@ -156,6 +157,8 @@ def store_submission(submission, dir=''):
 
 
 def main():
+  parser = OptionParser()
+  parser.add_option('-u','--username',dest='handle',help='User handle in codeforces site')
   if len(sys.argv) < 2:
     print 'Usage : username [directory]'
     sys.exit(1)
