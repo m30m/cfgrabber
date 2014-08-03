@@ -7,6 +7,7 @@ import os
 import codecs
 import thread
 import time
+import getpass
 from BeautifulSoup import BeautifulSoup
 from optparse import OptionParser
 
@@ -157,17 +158,18 @@ def store_submission(submission, dir=''):
 
 
 def main():
-  parser = OptionParser()
+  parser = OptionParser(usage='Usage: %prog --username HANDLE [options]')
   parser.add_option('-u','--username',dest='handle',help='User handle in codeforces site')
-  if len(sys.argv) < 2:
-    print 'Usage : username [directory]'
-    sys.exit(1)
-  handle = sys.argv[1]
-  path = ''
-  if len(sys.argv) > 2:
-    path = sys.argv[2]
-  subs = get_submissions(handle)
-  ok_subs = [sub for sub in subs if sub.verdict == 'OK' and not sub.isgym]
+  parser.add_option('-g','--gym',action='store_false',dest='storegym',help='Store gym submissions too',default=False)
+  parser.add_option('-p','--path',dest='path',help='Directory to store the submissions',default='')
+  (options,args) = parser.parse_args()
+  if not options.handle:
+    parser.error('User handle is missing use --help for more information')
+  subs = get_submissions(options.handle)
+  if options.storegym:
+    print 'To Store gym submission you have to enter password'
+    pw = getpass.getpass()
+  ok_subs = [sub for sub in subs if sub.verdict == 'OK' and (not sub.isgym or options.storegym)]
   for sub in ok_subs:
     while Submission.active > 80:
       time.sleep(0.1)
@@ -177,7 +179,7 @@ def main():
     time.sleep(0.1)
   for sub in ok_subs:
     print "Saving Submission #%d for question : %s " % (sub.id, sub.name)
-    store_submission(sub, dir=path)
+    store_submission(sub, dir=options.path)
   return
 
 
