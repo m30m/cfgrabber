@@ -26,7 +26,15 @@ class CFBrowser:
     self.br['password']=password
     self.br.submit()
   def get_url(self,url):
-    return self.br.open(url).read().decode('utf-8')
+    tries = 0
+    while tries < 10:
+      try:
+        return self.br.open(url).read().decode('utf-8')
+      except:
+        time.sleep(0.1)
+        tries+=1
+    print "Sorry Couldn't get the url : %s" % url
+
 
 cf = CFBrowser()
 
