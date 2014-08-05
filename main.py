@@ -1,6 +1,4 @@
 #!/usr/bin/python -tt
-import sys
-import urllib
 import re
 import HTMLParser
 import os
@@ -77,7 +75,7 @@ class Submission:
     else:
       source_url = 'http://codeforces.com/contest/%d/submission/%d' % (self.contest_id, self.id)
     Submission.active += 1
-    html = get_url(source_url)
+    html = cf.get_url(source_url)
     start_tag = '<pre class="prettyprint" style="padding:0.5em;">'
     end_tag = '</pre>'
     p1 = html.find(start_tag) + len(start_tag)
@@ -150,7 +148,7 @@ def get_submissions(handle):
 
 
 def store_submission(submission, dir=''):
-  dir = os.path.join(dir, 'contests/%d/' % submission.contest_id)
+  dir = os.path.join(dir, '%s/%d/' % ('gym' if submission.isgym else 'contests', submission.contest_id))
   if not os.path.exists(dir):
     os.makedirs(dir)
   dir += submission.problem_id
@@ -185,6 +183,7 @@ def main():
   if options.storegym:
     print 'To Store gym submission you have to enter password'
     pw = getpass.getpass()
+    cf.login(options.handle,pw)
   ok_subs = [sub for sub in subs if sub.verdict == 'OK' and (not sub.isgym or options.storegym)]
   for sub in ok_subs:
     while Submission.active > 80:
