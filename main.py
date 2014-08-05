@@ -81,7 +81,7 @@ class Submission:
       return self.source_code
     source_url = 'http://codeforces.com/%s/%d/submission/%d' % ('gym' if self.isgym else 'contest',self.contest_id, self.id)
     print "Downloading Submission #%d for question : %s " % (self.id, self.name)
-    print "the url is : %s" % source_url
+    #print "the url is : %s" % source_url
     Submission.active += 1
     html = cf.get_url(source_url)
     start_tag = '<pre class="prettyprint" style="padding:0.5em;">'
@@ -156,6 +156,7 @@ def get_submissions(handle):
 
 
 def store_submission(submission, dir=''):
+  print "Saving Submission #%d for question : %s " % (submission.id, submission.name)
   dir = os.path.join(dir, '%s/%d/' % ('gym' if submission.isgym else 'contests', submission.contest_id))
   if not os.path.exists(dir):
     os.makedirs(dir)
@@ -200,7 +201,6 @@ def main():
   while Submission.active:
     time.sleep(0.1)
   for sub in ok_subs:
-    print "Saving Submission #%d for question : %s " % (sub.id, sub.name)
     store_submission(sub, dir=options.path)
   return
 
