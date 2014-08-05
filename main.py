@@ -16,8 +16,10 @@ class CFBrowser:
   def __init__(self):
     self.br = mechanize.Browser()
     self.br.set_handle_refresh(False)
+    self.br.set_handle_robots(False)
     self.br.addheaders = [('User-agent', 'Firefox')]
   def login(self,handle,password):
+    #TODO:Check whether the password is correct or not
     self.br.open('http://codeforces.com/enter')
     self.br.form = list(self.br.forms())[1]
     self.br['handle']=handle
@@ -69,11 +71,9 @@ class Submission:
     """
     if hasattr(self, 'source_code'):
       return self.source_code
-    if self.isgym:
-      print "Can't get Gym submissions"
-      return
-    else:
-      source_url = 'http://codeforces.com/contest/%d/submission/%d' % (self.contest_id, self.id)
+    source_url = 'http://codeforces.com/%s/%d/submission/%d' % ('gym' if self.isgym else 'contest',self.contest_id, self.id)
+    print "Downloading Submission #%d for question : %s " % (self.id, self.name)
+    print "the url is : %s" % source_url
     Submission.active += 1
     html = cf.get_url(source_url)
     start_tag = '<pre class="prettyprint" style="padding:0.5em;">'
@@ -174,7 +174,7 @@ def store_submission(submission, dir=''):
 def main():
   parser = OptionParser(usage='Usage: %prog --username HANDLE [options]')
   parser.add_option('-u','--username',dest='handle',help='User handle in codeforces site')
-  parser.add_option('-g','--gym',action='store_false',dest='storegym',help='Store gym submissions too',default=False)
+  parser.add_option('-g','--gym',action='store_true',dest='storegym',help='Store gym submissions too',default=False)
   parser.add_option('-p','--path',dest='path',help='Directory to store the submissions',default='')
   (options,args) = parser.parse_args()
   if not options.handle:
@@ -188,7 +188,6 @@ def main():
   for sub in ok_subs:
     while Submission.active > 80:
       time.sleep(0.1)
-    print "Downloading Submission #%d for question : %s " % (sub.id, sub.name)
     thread.start_new_thread(sub.get_source, ())
   while Submission.active:
     time.sleep(0.1)
