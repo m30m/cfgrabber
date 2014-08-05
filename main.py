@@ -10,15 +10,30 @@ import time
 import getpass
 from BeautifulSoup import BeautifulSoup
 from optparse import OptionParser
+import mechanize
 
-__author__ = 'amin'
+__author__ = 'Mohammad Amin Khashkhashi Moghaddam'
 
+class CFBrowser:
+  def __init__(self):
+    self.br = mechanize.Browser()
+    self.br.set_handle_refresh(False)
+    self.br.addheaders = [('User-agent', 'Firefox')]
+  def login(self,handle,password):
+    self.br.open('http://codeforces.com/enter')
+    self.br.form = list(self.br.forms())[1]
+    self.br['handle']=handle
+    self.br['password']=password
+    self.br.submit()
+  def get_url(self,url):
+    return self.br.open(url).read().decode('utf-8')
 
-def get_url(url):
-  return urllib.urlopen(url).read().decode('utf-8')
-
+cf = CFBrowser()
 
 class Submission:
+  """
+  Stores all the data about a submission
+  """
   parser = HTMLParser.HTMLParser()
   #langs is a dict with each language mapping to a pair with file format and comment format
   langs = {
@@ -95,7 +110,7 @@ def get_lastpage_num(html):
 
 def get_submissionpage(url, num, subpages):
   print 'Downloading Submission Page #%d' % num
-  subpages.append((num, get_url(url)))
+  subpages.append((num, cf.get_url(url)))
 
 
 def get_submission_table(html):
@@ -116,7 +131,7 @@ def get_submissions(handle):
   pagenum = 1
   submissions = []
   url = get_submissions_url(handle, pagenum)
-  lastpage = get_lastpage_num(get_url(url))
+  lastpage = get_lastpage_num(cf.get_url(url))
   subpages = []
   for i in range(1, lastpage + 1):
     thread.start_new_thread(get_submissionpage, (get_submissions_url(handle, i), i, subpages,))
@@ -155,6 +170,7 @@ def store_submission(submission, dir=''):
     fh = codecs.open(dir + format, 'w', 'utf-8')
   fh.write(data)
   fh.close()
+
 
 
 def main():
