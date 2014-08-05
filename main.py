@@ -26,6 +26,7 @@ class CFBrowser:
   def get_url(self,url):
     return self.br.open(url).read().decode('utf-8')
 
+cf = CFBrowser()
 
 class Submission:
   """
@@ -107,7 +108,7 @@ def get_lastpage_num(html):
 
 def get_submissionpage(url, num, subpages):
   print 'Downloading Submission Page #%d' % num
-  subpages.append((num, get_url(url)))
+  subpages.append((num, cf.get_url(url)))
 
 
 def get_submission_table(html):
@@ -128,7 +129,7 @@ def get_submissions(handle):
   pagenum = 1
   submissions = []
   url = get_submissions_url(handle, pagenum)
-  lastpage = get_lastpage_num(get_url(url))
+  lastpage = get_lastpage_num(cf.get_url(url))
   subpages = []
   for i in range(1, lastpage + 1):
     thread.start_new_thread(get_submissionpage, (get_submissions_url(handle, i), i, subpages,))
