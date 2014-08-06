@@ -56,12 +56,12 @@ class Submission:
   """
   parser = HTMLParser.HTMLParser()
   #langs is a dict with each language mapping to a pair with file format and comment format
-  langs = {
-    r'C\+\+': ('.cpp', u'//'),
-    r'Java': ('.java', u'//'),
-    r'Python': ('.py', u'#'),
-    r'': ('.unknown', u'//')
-  }
+  langs = [
+    (r'C\+\+', ('.cpp', u'//')),
+    (r'Java', ('.java', u'//')),
+    (r'Python', ('.py', u'#')),
+    (r'', ('.unknown', u'//'))
+  ]
   #TODO:fix this TOF with threading
   active = 0
 
@@ -72,9 +72,10 @@ class Submission:
     self.id = int(rowdom['data-submission-id'])
     cells = rowdom.findAll('td')
     self.lang = cells[4].getText()
-    for item in Submission.langs.items():
+    for item in Submission.langs:
       if re.search(item[0], self.lang):
         (self.file_format, self.comment_format) = item[1]
+        break
     self.verdict = cells[5].span['submissionverdict']
     self.time = cells[6].getText()
     self.memory = cells[7].getText()
