@@ -1,0 +1,7 @@
+You need to install BeautifulSoup and Mechanize modules for the program to work properly.
+These modules are located in python-beautifulsoup and python-mechanize respectively.
+You can install them on ubuntu so by running these commands:
+apt-get install python-beautifulsoup
+apt-get install python-mechanize
+Run the program by running the script or use the command below:
+python2.7 main.py

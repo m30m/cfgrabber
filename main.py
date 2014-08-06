@@ -31,7 +31,7 @@ class CFBrowser:
       try:
         return self.br.open(url).read().decode('utf-8')
       except:
-        time.sleep(0.1)
+        time.sleep(0.25)
         tries+=1
     print "Sorry Couldn't get the url : %s" % url
 
@@ -172,9 +172,9 @@ def store_submission(submission, dir=''):
   data = submission.get_source_with_stats()
   try:
     data.encode('ascii')
-    fh = open(dir + format, 'w')
+    fh = open(dir + format, 'wb')
   except UnicodeEncodeError:
-    fh = codecs.open(dir + format, 'w', 'utf-8')
+    fh = codecs.open(dir + format, 'wb', 'utf-8')
   fh.write(data)
   fh.close()
 
