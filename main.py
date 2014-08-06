@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7 -tt
+from duplicity import static
 import re
 import HTMLParser
 import os
@@ -9,8 +10,20 @@ import getpass
 from BeautifulSoup import BeautifulSoup
 from optparse import OptionParser
 import mechanize
+import sys
 
 __author__ = 'Mohammad Amin Khashkhashi Moghaddam'
+
+class Printer:
+  lock = False
+  @staticmethod
+  def pr(str):
+    while Printer.lock:
+      time.sleep(0.1)
+    Printer.lock=True
+    sys.stdout.write(str + '\n')
+    Printer.lock=False
+
 
 class CFBrowser:
   def __init__(self):
@@ -31,9 +44,9 @@ class CFBrowser:
       try:
         return self.br.open(url).read().decode('utf-8')
       except:
-        time.sleep(0.25)
+        time.sleep(0.1)
         tries+=1
-    print "Sorry Couldn't get the url : %s" % url
+    Printer.pr("Sorry Couldn't get the url : %s" % url)
 
 
 cf = CFBrowser()
@@ -80,7 +93,7 @@ class Submission:
     if hasattr(self, 'source_code'):
       return self.source_code
     source_url = 'http://codeforces.com/%s/%d/submission/%d' % ('gym' if self.isgym else 'contest',self.contest_id, self.id)
-    print "Downloading Submission #%d for question : %s " % (self.id, self.name)
+    Printer.pr("Downloading Submission #%d for question : %s " % (self.id, self.name))
     #print "the url is : %s" % source_url
     Submission.active += 1
     html = cf.get_url(source_url)
@@ -115,7 +128,7 @@ def get_lastpage_num(html):
 
 
 def get_submissionpage(url, num, subpages):
-  print 'Downloading Submission Page #%d' % num
+  Printer.pr('Downloading Submission Page #%d' % num)
   subpages.append((num, cf.get_url(url)))
 
 
@@ -155,9 +168,9 @@ def get_submissions(handle):
   return submissions
 
 
-def store_submission(submission, dir=''):
+def store_submission(handle,submission, dir=''):
   print "Saving Submission #%d for question : %s " % (submission.id, submission.name)
-  dir = os.path.join(dir, '%s/%d/' % ('gym' if submission.isgym else 'contests', submission.contest_id))
+  dir = os.path.join(dir, '%s/%s/%d/' % (handle,'gym' if submission.isgym else 'contests', submission.contest_id))
   if not os.path.exists(dir):
     os.makedirs(dir)
   dir += submission.problem_id
@@ -195,13 +208,14 @@ def main():
     cf.login(options.handle,pw)
   ok_subs = [sub for sub in subs if sub.verdict == 'OK' and (not sub.isgym or options.storegym)]
   for sub in ok_subs:
-    while Submission.active > 80:
+    while Submission.active > 50:
       time.sleep(0.1)
     thread.start_new_thread(sub.get_source, ())
   while Submission.active:
-    time.sleep(0.1)
+    time.sleep(1)
+  time.sleep(1)
   for sub in ok_subs:
-    store_submission(sub, dir=options.path)
+    store_submission(options.handle,sub, dir=options.path)
   return
 
 
