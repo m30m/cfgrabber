@@ -1,5 +1,4 @@
 #!/usr/bin/python2.7 -tt
-from duplicity import static
 import re
 import HTMLParser
 import os
@@ -194,18 +193,18 @@ def store_submission(handle,submission, dir=''):
 
 
 def main():
-  parser = OptionParser(usage='Usage: %prog --username HANDLE [options]')
-  parser.add_option('-u','--username',dest='handle',help='User handle in codeforces site')
+  parser = OptionParser(usage='Usage: %prog [options] HANDLE')
   parser.add_option('-g','--gym',action='store_true',dest='storegym',help='Store gym submissions too',default=False)
   parser.add_option('-p','--path',dest='path',help='Directory to store the submissions',default='')
   (options,args) = parser.parse_args()
-  if not options.handle:
-    parser.error('User handle is missing use --help for more information')
-  subs = get_submissions(options.handle)
+  if not args:
+    parser.error('HANDLE is missing use --help for more information')
+  handle = args[0]
+  subs = get_submissions(handle)
   if options.storegym:
     print 'To Store gym submission you have to enter password'
     pw = getpass.getpass()
-    cf.login(options.handle,pw)
+    cf.login(handle,pw)
   ok_subs = [sub for sub in subs if sub.verdict == 'OK' and (not sub.isgym or options.storegym)]
   for sub in ok_subs:
     while Submission.active > 50:
@@ -215,7 +214,7 @@ def main():
     time.sleep(1)
   time.sleep(1)
   for sub in ok_subs:
-    store_submission(options.handle,sub, dir=options.path)
+    store_submission(handle,sub, dir=options.path)
   return
 
 
