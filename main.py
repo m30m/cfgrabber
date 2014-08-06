@@ -1,4 +1,4 @@
-#!/usr/bin/python -tt
+#!/usr/bin/python2.7 -tt
 import re
 import HTMLParser
 import os
